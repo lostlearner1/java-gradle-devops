@@ -1,0 +1,77 @@
+name: Java Application DevOps CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # =========================================================================
+  # Build, Test, and Code Quality Stage
+  # =========================================================================
+  build-and-test:
+    name: Build & Test (JDK 21)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up OpenJDK 21 (Eclipse Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Grant Execute Permission for Gradle Wrapper
+        run: chmod +x gradlew
+
+      - name: Run Clean, Compile, and JUnit 5 Tests
+        run: ./gradlew clean test --info --stacktrace
+
+      - name: Build Executable & Standalone Fat JAR
+        run: ./gradlew build fatJar --info --stacktrace
+
+      - name: Publish Test Report Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-test-reports
+          path: build/reports/tests/test/
+          retention-days: 14
+
+      - name: Publish Built JAR Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: application-jars
+          path: build/libs/*.jar
+          retention-days: 14
+
+  # =========================================================================
+  # Continuous Delivery / Deployment Stage (Runs after successful build on main)
+  # =========================================================================
+  deploy-staging:
+    name: Continuous Delivery & Deployment
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Application JARs
+        uses: actions/download-artifact@v4
+        with:
+          name: application-jars
+          path: deploy/
+
+      - name: Verify Artifact Integrity
+        run: |
+          echo "Listing deployed artifacts:"
+          ls -la deploy/
+          echo "Deployment ready for staging environment."
