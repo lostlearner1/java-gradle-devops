@@ -5,8 +5,6 @@ import com.app.model.BuildReport;
 import com.app.model.PipelineStatus;
 import com.app.service.DevOpsPipelineService;
 import com.app.service.MetricsCalculator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Scanner;
 
@@ -14,7 +12,6 @@ import java.util.Scanner;
  * Main application entry point for the Java DevOps Pipeline CLI.
  */
 public class Application {
-    private static final Logger logger = LoggerFactory.getLogger(Application.class);
 
     public static void main(String[] args) {
         AppConfig config = new AppConfig();
